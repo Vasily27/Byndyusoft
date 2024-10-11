@@ -1,8 +1,10 @@
+
+import { AddOperation } from "./operations/AddOperation";
+import { SubtractOperation } from "./operations/SubtractOperation";
+import { MultiplyOperation } from "./operations/MultiplyOperation";
+import { DivideOperation } from "./operations/DivideOperation";
+import { PowerOperation } from "./operations/PowerOperation";
 import {Operation} from "./operations/interfaces";
-import {AddOperation} from "./operations/AddOperation";
-import {SubtractOperation} from "./operations/SubtractOperation";
-import {MultiplyOperation} from "./operations/MultiplyOperation";
-import {DivideOperation} from "./operations/DivideOperation";
 
 export class Evaluator {
     private operations: Map<string, Operation>;
@@ -13,6 +15,7 @@ export class Evaluator {
         this.operations.set('-', new SubtractOperation());
         this.operations.set('*', new MultiplyOperation());
         this.operations.set('/', new DivideOperation());
+        this.operations.set('^', new PowerOperation());
     }
 
     evaluate(expression: string[]): number {
@@ -20,7 +23,6 @@ export class Evaluator {
     }
 
     private evaluateExpression(expression: string[]): number {
-        // Сначала обрабатываем скобки
         while (expression.includes('(')) {
             const openIndex = expression.lastIndexOf('(');
             const closeIndex = expression.indexOf(')', openIndex);
@@ -30,9 +32,8 @@ export class Evaluator {
             const subResult = this.evaluateExpression(subExpression);
             expression.splice(openIndex, closeIndex - openIndex + 1, subResult.toString());
         }
-
+        this.processOperations(expression, ['^']); // Возведение в степень
         this.processOperations(expression, ['*', '/']);
-
         this.processOperations(expression, ['+', '-']);
 
         if (expression.length === 1) {
@@ -49,13 +50,13 @@ export class Evaluator {
             if (operators.includes(token)) {
                 const operator = this.operations.get(token);
                 if (!operator) throw new Error(`Unknown operator: ${token}`);
-
                 const left = parseFloat(expression[index - 1]);
                 const right = parseFloat(expression[index + 1]);
-
+                if (token === '/' && right === 0) {
+                    throw new Error('Деление на ноль');
+                }
                 const result = operator.execute(left, right);
                 expression.splice(index - 1, 3, result.toString());
-
                 index = 0;
             } else {
                 index++;
